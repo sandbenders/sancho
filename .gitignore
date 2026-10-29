@@ -1,0 +1,5 @@
+# test and example programs, and the pictures the example writes
+*.bin
+*.exe
+*.pdb
+/*.png
