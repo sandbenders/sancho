@@ -2,6 +2,11 @@
 
 Every release of sancho, newest first. Versions follow [Semantic Versioning](https://semver.org): until 1.0.0, a minor version may change the API, and the notes say how.
 
+## Unreleased
+
+- `png_writer`: `encode_animation` writes animated PNGs (APNG) from frames laid out as `encode` takes pixels, at every layout and depth `encode` writes. Each frame after the first keeps only the rectangle that changed, and a repeated frame shows longer instead of being kept again. Tested by playing every frame back from generated frames, in every layout and at both depths.
+- `encode` and `encode_animation` share the code that filters and compresses the rows; `encode`'s output is unchanged.
+
 ## 0.1.0 (2026-10-29)
 
 The first release.
