@@ -19,8 +19,6 @@ import "core:bytes"
 import "core:hash"
 import "core:image"
 
-import "../deflate"
-
 Image   :: image.Image
 Options :: image.Options
 Error   :: image.Error
@@ -67,22 +65,7 @@ encode :: proc(pixels: []u8, width, height, channels: int, depth := 8, filters :
 	}
 	runtime.DEFAULT_TEMP_ALLOCATOR_TEMP_GUARD(ignore = allocator == context.temp_allocator)
 
-	samples := pixels
-	if depth == 16 {
-		samples = big_endian(pixels)
-	}
-	bpp := channels * depth / 8
-	z: []u8
-	switch filters {
-	case .Adaptive: z = deflate.compress_zlib(filter_rows(samples, width, height, bpp, true), context.temp_allocator)
-	case .None:     z = deflate.compress_zlib(filter_rows(samples, width, height, bpp, false), context.temp_allocator)
-	case .Smallest:
-		// A tie goes to the filtered rows.
-		z = deflate.compress_zlib(filter_rows(samples, width, height, bpp, true), context.temp_allocator)
-		if plain := deflate.compress_zlib(filter_rows(samples, width, height, bpp, false), context.temp_allocator); len(plain) < len(z) {
-			z = plain
-		}
-	}
+	z := compressed(pixels, width, height, channels * depth / 8, depth, filters)
 
 	out := make([dynamic]u8, 0, len(z) + 57, allocator)
 	append(&out, ..SIGNATURE[:])

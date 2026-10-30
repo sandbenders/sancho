@@ -4,7 +4,7 @@ A PNG writer and a deflate compressor for [Odin](https://odin-lang.org), with no
 
 Odin's `core:image/png` reads PNG files and `core:compress/zlib` inflates, but neither has the other half: writing a PNG, or compressing. sancho is that other half.
 
-- **`png_writer`** saves a `core:image` `Image`, or plain pixels, as a PNG: grey, grey with alpha, RGB or RGBA, at 8 or 16 bits a channel. Its `save`, `save_to_buffer` and `save_to_file` have the same shape as the writers in `core:image` (`qoi`, `tga`, `bmp`, `netpbm`).
+- **`png_writer`** saves a `core:image` `Image`, or plain pixels, as a PNG: grey, grey with alpha, RGB or RGBA, at 8 or 16 bits a channel. `encode_animation` writes animated PNGs from the same kinds of pixels. Its `save`, `save_to_buffer` and `save_to_file` have the same shape as the writers in `core:image` (`qoi`, `tga`, `bmp`, `netpbm`).
 - **`deflate`** compresses to raw deflate (RFC 1951) or to a zlib stream (RFC 1950) that `core:compress/zlib.inflate` reads back.
 
 It is called sancho, after [Sancho Panza](https://en.wikipedia.org/wiki/Sancho_Panza) because it rides beside [rocinante](https://github.com/sandbenders/rocinante), the creative-coding language it was written for, and carries the luggage.
@@ -65,6 +65,17 @@ PNG lets each row be stored as differences from its neighbours ("filtered") befo
 png.save("frame.png", &img, filters = .Adaptive)  // when speed matters more than size
 ```
 
+## Animations
+
+`encode_animation` writes an animated PNG (APNG), which every current browser plays and which keeps every pixel exactly, where a GIF has 256 colours. The frames are laid out as `encode` takes pixels, all the same size; `ticks[i]` is how long frame i shows, in 1/`per_second` of a second, and the animation plays forever:
+
+```odin
+data, err := png.encode_animation(frames, width, height, channels = 4, ticks = ticks, per_second = 30)
+defer delete(data)
+```
+
+The first frame is the file's own picture, so a program that knows only PNG (`core:image/png` among them) shows it. Each later frame keeps only the rectangle that changed since the frame before, and a frame equal to the one before is not kept again (the one before shows longer), so a drawing that changes a little at a time stays small.
+
 ## How it compares
 
 Six rendered 2D pictures (flat colours, gradients, thin anti-aliased lines; 280 KB to 1.9 MB of pixels), total size in bytes, on one x86-64 Linux computer:
@@ -86,7 +97,7 @@ Everything is decided by the data alone, never by addresses, hashing order or ti
 
 - Palette (indexed) images, bit depths below 8, and interlaced files.
 - Ancillary chunks: gamma, colour profiles, text, timestamps. `save_to_buffer` takes `core:image`'s `Options` so it has the same shape as the other writers, but no option applies to PNG yet and any given is ignored.
-- Streaming: the whole picture is compressed in memory.
+- Streaming: the whole picture is compressed in memory. An animation holds all its frames in memory too.
 - Compression levels: there is one, about zlib's level 6.
 
 Note that `core:image/png` gives grey pictures back as RGB (and grey with alpha as RGBA) when it reads them; the files sancho writes are grey.
