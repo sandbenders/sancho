@@ -11,7 +11,7 @@ jobs:
     # Pinned, so a change of runner image never changes what is tested.
     runs-on: ubuntu-24.04
     env:
-      ODIN_VERSION: dev-2026-10
+      ODIN_VERSION: dev-2026-11
     steps:
       - uses: actions/checkout@v4
       - name: Install Odin

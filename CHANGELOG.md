@@ -4,6 +4,7 @@ Every release of sancho, newest first. Versions follow [Semantic Versioning](htt
 
 ## Unreleased
 
+- Needs Odin `dev-2026-11`: `core:image`'s `Image.pixels` and the savers' buffer are a `[dynamic]byte` there, so `save_to_buffer` takes a `^[dynamic]byte` (it took a `^bytes.Buffer`), and the tests inflate with `core:compress/deflate`. The files `encode` writes are unchanged.
 - `png_writer`: `encode_animation` writes animated PNGs (APNG) from frames laid out as `encode` takes pixels, at every layout and depth `encode` writes. Each frame after the first keeps only the rectangle that changed, and a repeated frame shows longer instead of being kept again. Tested by playing every frame back from generated frames, in every layout and at both depths.
 - `encode` and `encode_animation` share the code that filters and compresses the rows; `encode`'s output is unchanged.
 
