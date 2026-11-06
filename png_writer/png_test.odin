@@ -64,7 +64,7 @@ round_trips :: proc(t: ^testing.T, width, height, channels, depth: int, filters:
 	defer if channels <= 2 {delete(want)}
 	testing.expect_value(t, img.channels, channels + 2 if channels <= 2 else channels, loc = loc)
 	testing.expect_value(t, img.depth, depth, loc = loc)
-	testing.expectf(t, bytes.equal(bytes.buffer_to_bytes(&img.pixels), want), "%dx%d %d channels %d bits %v: pixels differ", width, height, channels, depth, filters, loc = loc)
+	testing.expectf(t, bytes.equal(img.pixels[:], want), "%dx%d %d channels %d bits %v: pixels differ", width, height, channels, depth, filters, loc = loc)
 	return len(data)
 }
 
@@ -199,9 +199,9 @@ test_bad_input_is_refused :: proc(t: ^testing.T) {
 	testing.expect_value(t, err, Error(.Invalid_Input_Image))
 	_, err = encode(nil, 1, 1, 1)
 	testing.expect_value(t, err, Error(.Invalid_Input_Image))
-	out: bytes.Buffer
+	out: [dynamic]u8
 	testing.expect_value(t, save_to_buffer(&out, nil), Error(.Invalid_Input_Image))
-	testing.expect_value(t, len(out.buf), 0)
+	testing.expect_value(t, len(out), 0)
 }
 
 @(test)
@@ -209,16 +209,16 @@ test_an_image_saves_to_a_buffer_and_a_file :: proc(t: ^testing.T) {
 	img := Image{width = 3, height = 2, channels = 4, depth = 8}
 	pixels := pixels_for(3, 2, 4, 8, 4)
 	defer delete(pixels)
-	bytes.buffer_write(&img.pixels, pixels)
-	defer bytes.buffer_destroy(&img.pixels)
+	append(&img.pixels, ..pixels)
+	defer delete(img.pixels)
 
-	out: bytes.Buffer
-	defer bytes.buffer_destroy(&out)
+	out: [dynamic]u8
+	defer delete(out)
 	testing.expect(t, save(&out, &img) == nil)
-	loaded, err := core_png.load_from_bytes(bytes.buffer_to_bytes(&out))
+	loaded, err := core_png.load_from_bytes(out[:])
 	testing.expect(t, err == nil)
 	if err == nil {
-		testing.expect(t, bytes.equal(bytes.buffer_to_bytes(&loaded.pixels), pixels))
+		testing.expect(t, bytes.equal(loaded.pixels[:], pixels))
 		core_png.destroy(loaded)
 	}
 
@@ -228,7 +228,7 @@ test_an_image_saves_to_a_buffer_and_a_file :: proc(t: ^testing.T) {
 	from_file, file_err := core_png.load_from_file(path)
 	testing.expect(t, file_err == nil)
 	if file_err == nil {
-		testing.expect(t, bytes.equal(bytes.buffer_to_bytes(&from_file.pixels), pixels))
+		testing.expect(t, bytes.equal(from_file.pixels[:], pixels))
 		core_png.destroy(from_file)
 	}
 	testing.expect_value(t, save("no/such/folder/x.png", &img), Error(.Unable_To_Write_File))

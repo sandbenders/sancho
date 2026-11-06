@@ -3,7 +3,7 @@ package deflate
 
 import "base:runtime"
 import "core:bytes"
-import "core:compress/zlib"
+import odin_deflate "core:compress/deflate"
 import "core:hash"
 import "core:math/rand"
 import "core:testing"
@@ -13,11 +13,11 @@ import "core:testing"
 inflates_back :: proc(t: ^testing.T, data: []u8, loc := #caller_location) -> int {
 	packed := compress(data)
 	defer delete(packed)
-	buf: bytes.Buffer
-	defer bytes.buffer_destroy(&buf)
-	err := zlib.inflate(packed, &buf, true, len(data))
+	buf: [dynamic]u8
+	defer delete(buf)
+	err := odin_deflate.inflate_raw(&buf, packed, len(data))
 	testing.expectf(t, err == nil, "inflate failed: %v", err, loc = loc)
-	testing.expectf(t, bytes.equal(bytes.buffer_to_bytes(&buf), data), "%d bytes came back different", len(data), loc = loc)
+	testing.expectf(t, bytes.equal(buf[:], data), "%d bytes came back different", len(data), loc = loc)
 	return len(packed)
 }
 
@@ -135,11 +135,11 @@ test_the_zlib_stream_has_its_header_and_checksum :: proc(t: ^testing.T) {
 	sum := hash.adler32(data)
 	tail := z[len(z) - 4:]
 	testing.expect_value(t, u32(tail[0]) << 24 | u32(tail[1]) << 16 | u32(tail[2]) << 8 | u32(tail[3]), sum)
-	buf: bytes.Buffer
-	defer bytes.buffer_destroy(&buf)
-	err := zlib.inflate(z, &buf, false, len(data))
+	buf: [dynamic]u8
+	defer delete(buf)
+	err := odin_deflate.inflate_zlib(&buf, z, len(data))
 	testing.expect(t, err == nil)
-	testing.expect(t, bytes.equal(bytes.buffer_to_bytes(&buf), data))
+	testing.expect(t, bytes.equal(buf[:], data))
 }
 
 @(test)
@@ -201,10 +201,10 @@ test_generated_data_round_trips :: proc(t: ^testing.T) {
 		defer delete(data)
 		packed := compress(data)
 		defer delete(packed)
-		buf: bytes.Buffer
-		defer bytes.buffer_destroy(&buf)
-		err := zlib.inflate(packed, &buf, true, len(data))
-		if !testing.expectf(t, err == nil && bytes.equal(bytes.buffer_to_bytes(&buf), data), "seed %d (%d bytes): %v", seed, len(data), err) {
+		buf: [dynamic]u8
+		defer delete(buf)
+		err := odin_deflate.inflate_raw(&buf, packed, len(data))
+		if !testing.expectf(t, err == nil && bytes.equal(buf[:], data), "seed %d (%d bytes): %v", seed, len(data), err) {
 			return
 		}
 	}

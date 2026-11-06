@@ -15,7 +15,6 @@
 package png_writer
 
 import "base:runtime"
-import "core:bytes"
 import "core:hash"
 import "core:image"
 
@@ -35,15 +34,14 @@ SIGNATURE := [8]u8{0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n'}
 // A PNG of `img` added to `output`. `options` is there so this has the shape of
 // core:image's other writers; no option applies to PNG yet, and any given is
 // ignored. 16-bit pixels are in the machine's byte order, as core:image keeps them.
-save_to_buffer :: proc(output: ^bytes.Buffer, img: ^Image, options := Options{}, filters := Filters.Smallest, allocator := context.allocator) -> (err: Error) {
+save_to_buffer :: proc(output: ^[dynamic]u8, img: ^Image, options := Options{}, filters := Filters.Smallest, allocator := context.allocator) -> (err: Error) {
 	if img == nil {
 		return .Invalid_Input_Image
 	}
-	data := encode(img.pixels.buf[:], img.width, img.height, img.channels, img.depth, filters, allocator) or_return
+	data := encode(img.pixels[:], img.width, img.height, img.channels, img.depth, filters, allocator) or_return
 	defer delete(data, allocator)
-	_, write_err := bytes.buffer_write(output, data)
-	if write_err != nil {
-		return write_err
+	if _, append_err := append(output, ..data); append_err != nil {
+		return .Unable_To_Allocate_Or_Resize
 	}
 	return nil
 }
