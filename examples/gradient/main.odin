@@ -5,7 +5,6 @@
 // Run from the repository root: odin run examples/gradient
 package main
 
-import "core:bytes"
 import "core:fmt"
 import "core:image"
 import "core:os"
@@ -15,10 +14,10 @@ import png "../../png_writer"
 
 main :: proc() {
 	img := image.Image{width = 256, height = 256, channels = 3, depth = 8}
-	defer bytes.buffer_destroy(&img.pixels)
+	defer delete(img.pixels)
 	for y in 0 ..< 256 {
 		for x in 0 ..< 256 {
-			bytes.buffer_write(&img.pixels, []u8{u8(x), u8(y), u8(255 - x)})
+			append(&img.pixels, u8(x), u8(y), u8(255 - x))
 		}
 	}
 	if err := png.save("gradient.png", &img); err != nil {

@@ -9,7 +9,7 @@ Thank you for helping. Issues and pull requests are welcome on GitHub.
 
 ## Making a change
 
-1. Use the Odin release named in the README (currently `dev-2026-10`).
+1. Use the Odin release named in the README (currently `dev-2026-11`).
 2. Write the tests with the code. Every output is checked by reading it back with Odin's own readers (`core:compress/zlib`, `core:image/png`), never only by comparing with bytes we wrote ourselves.
 3. Keep output deterministic: nothing may depend on addresses, map order, threads or time, and ties must always go the same way.
 4. Run everything as the pipeline does:

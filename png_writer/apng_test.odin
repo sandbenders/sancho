@@ -2,7 +2,7 @@
 package png_writer
 
 import "core:bytes"
-import "core:compress/zlib"
+import odin_deflate "core:compress/deflate"
 import "core:hash"
 import core_png "core:image/png"
 import "core:math/rand"
@@ -38,10 +38,10 @@ chunks_of :: proc(t: ^testing.T, data: []u8) -> []Chunk {
 // A compressed rectangle's samples, unfiltered as a reader does (big-endian for 16 bits).
 @(private = "file")
 unpacked :: proc(t: ^testing.T, z: []u8, w, h, bpp: int) -> []u8 {
-	buf: bytes.Buffer
-	defer bytes.buffer_destroy(&buf)
-	testing.expect(t, zlib.inflate(z, &buf, false, (w * bpp + 1) * h) == nil)
-	raw := bytes.buffer_to_bytes(&buf)
+	buf: [dynamic]u8
+	defer delete(buf)
+	testing.expect(t, odin_deflate.inflate_zlib(&buf, z, (w * bpp + 1) * h) == nil)
+	raw := buf[:]
 	row := w * bpp
 	out := make([]u8, row * h, context.temp_allocator)
 	for y in 0 ..< h {
@@ -153,7 +153,7 @@ a_repeated_frame_shows_longer_instead :: proc(t: ^testing.T) {
 	img, read_err := core_png.load_from_bytes(data)
 	testing.expect(t, read_err == nil)
 	if read_err == nil {
-		testing.expect(t, bytes.equal(bytes.buffer_to_bytes(&img.pixels), a))
+		testing.expect(t, bytes.equal(img.pixels[:], a))
 		core_png.destroy(img)
 	}
 }

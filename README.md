@@ -2,10 +2,10 @@
 
 A PNG writer and a deflate compressor for [Odin](https://odin-lang.org), with no dependencies beyond Odin's own `core` library.
 
-Odin's `core:image/png` reads PNG files and `core:compress/zlib` inflates, but neither has the other half: writing a PNG, or compressing. sancho is that other half.
+Odin's `core:image/png` reads PNG files but cannot write one, and `core:compress/deflate` inflates; since `dev-2026-11` it compresses too, with its own encoder. sancho is a small, dependency-free writer for PNG and animated PNG, with a deflate compressor that gives the same bytes for the same pixels on every system (zlib level 6's method and size), which is what a golden-image test needs.
 
 - **`png_writer`** saves a `core:image` `Image`, or plain pixels, as a PNG: grey, grey with alpha, RGB or RGBA, at 8 or 16 bits a channel. `encode_animation` writes animated PNGs from the same kinds of pixels. Its `save`, `save_to_buffer` and `save_to_file` have the same shape as the writers in `core:image` (`qoi`, `tga`, `bmp`, `netpbm`).
-- **`deflate`** compresses to raw deflate (RFC 1951) or to a zlib stream (RFC 1950) that `core:compress/zlib.inflate` reads back.
+- **`deflate`** compresses to raw deflate (RFC 1951) or to a zlib stream (RFC 1950) that `core:compress/deflate`'s `inflate_zlib` reads back.
 
 It is called sancho, after [Sancho Panza](https://en.wikipedia.org/wiki/Sancho_Panza) because it rides beside [rocinante](https://github.com/sandbenders/rocinante), the creative-coding language it was written for, and carries the luggage.
 
@@ -109,7 +109,7 @@ odin test deflate
 odin test png_writer
 ```
 
-Every test checks its output with Odin's own readers: deflate data is inflated by `core:compress/zlib`, PNG files are read by `core:image/png`. Besides cases chosen by hand (empty input, runs past the longest match, repeats at every distance, data that does not compress, the deepest Huffman tree) there are 300 generated inputs and 60 generated pictures from fixed seeds, so a failure names the seed that finds it again. Tested with Odin `dev-2026-10`.
+Every test checks its output with Odin's own readers: deflate data is inflated by `core:compress/deflate`, PNG files are read by `core:image/png`. Besides cases chosen by hand (empty input, runs past the longest match, repeats at every distance, data that does not compress, the deepest Huffman tree) there are 300 generated inputs and 60 generated pictures from fixed seeds, so a failure names the seed that finds it again. Tested with Odin `dev-2026-11`, which it needs: `core:image`'s `Image.pixels` and the savers' buffer became `[dynamic]byte` in that release, so `save_to_buffer` takes a `^[dynamic]byte`.
 
 ## Contributing
 
